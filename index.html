@@ -1,133 +1,163 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hologramme IA</title>
-  <style>
-    /* Fond futuriste spatial */
-    body {
-      margin: 0;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: radial-gradient(circle at center, #0d0d0d 0%, #000 80%);
-      overflow: hidden;
-      font-family: Arial, sans-serif;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Futuristic Chat IA</title>
+<style>
+  /* Fond futuriste */
+  body {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    font-family: 'Arial', sans-serif;
+    display: flex;
+    flex-direction: column;
+    background: radial-gradient(circle at top left, #0f0f0f, #050505);
+    color: #fff;
+    overflow: hidden;
+  }
 
-    /* Conteneur de l'hologramme */
-    #hologram-container {
-      position: relative;
-      width: 300px;
-      height: 450px;
-      perspective: 1000px;
-    }
+  /* Conteneur des messages */
+  #chat-container {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+  }
 
-    /* Image de l'hologramme humain */
-    #hologram {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      border: 2px solid cyan;
-      border-radius: 10px;
-      filter: drop-shadow(0 0 15px cyan);
-    }
+  /* Messages IA */
+  .message.ia {
+    align-self: flex-start;
+    background: rgba(0, 255, 255, 0.1);
+    color: cyan;
+    padding: 10px 15px;
+    border-radius: 15px;
+    max-width: 70%;
+    backdrop-filter: blur(5px);
+    animation: fadeIn 0.3s;
+  }
 
-    /* Bouche animée */
-    #mouth {
-      position: absolute;
-      bottom: 50px;
-      left: 50%;
-      width: 60px;
-      height: 20px;
-      background: cyan;
-      border-radius: 50%;
-      transform: translateX(-50%);
-      transition: height 0.1s ease;
-    }
+  /* Messages utilisateur */
+  .message.user {
+    align-self: flex-end;
+    background: rgba(255, 0, 255, 0.1);
+    color: magenta;
+    padding: 10px 15px;
+    border-radius: 15px;
+    max-width: 70%;
+    backdrop-filter: blur(5px);
+    animation: fadeIn 0.3s;
+  }
 
-    /* Micro bouton */
-    #start-btn {
-      position: absolute;
-      bottom: 50px;
-      right: 50px;
-      padding: 15px 20px;
-      font-size: 18px;
-      background: cyan;
-      color: black;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      box-shadow: 0 0 15px cyan;
-      transition: 0.3s;
-    }
+  /* Barre de message */
+  #input-container {
+    display: flex;
+    padding: 10px 20px;
+    background: rgba(0,0,0,0.8);
+    border-top: 2px solid cyan;
+  }
 
-    #start-btn:hover {
-      transform: scale(1.1);
-    }
+  #message-input {
+    flex: 1;
+    padding: 10px 15px;
+    border-radius: 20px;
+    border: none;
+    outline: none;
+    font-size: 16px;
+    background: rgba(255,255,255,0.05);
+    color: #fff;
+  }
 
-  </style>
+  #send-btn {
+    margin-left: 10px;
+    padding: 10px 20px;
+    border-radius: 20px;
+    border: none;
+    background: cyan;
+    color: black;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+
+  #send-btn:hover {
+    background: #0ff;
+  }
+
+  @keyframes fadeIn {
+    from {opacity: 0; transform: translateY(10px);}
+    to {opacity: 1; transform: translateY(0);}
+  }
+</style>
 </head>
 <body>
 
-<div id="hologram-container">
-  <!-- Image d'hologramme humain -->
-  <img id="hologram" src="https://www.shutterstock.com/fr/image-vector/body-hologram-futuristic-design-human-cloning-1771018733" alt="Hologramme IA">
-  <div id="mouth"></div>
+<div id="chat-container"></div>
+
+<div id="input-container">
+  <input type="text" id="message-input" placeholder="Écris ton message...">
+  <button id="send-btn">Envoyer</button>
 </div>
 
-<button id="start-btn">🎤 Parle-moi</button>
-
 <script>
-  const startBtn = document.getElementById("start-btn");
-  const mouth = document.getElementById("mouth");
+const chatContainer = document.getElementById("chat-container");
+const messageInput = document.getElementById("message-input");
+const sendBtn = document.getElementById("send-btn");
 
-  // Fonction animation bouche
-  function animateMouth(isSpeaking) {
-    if(isSpeaking) {
-      mouth.style.height = "40px";
-    } else {
-      mouth.style.height = "20px";
-    }
-  }
+const apiKey = "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"; // <-- Mets ta clé OpenAI ici
 
-  startBtn.addEventListener("click", async () => {
-    // 1. Reconnaissance vocale
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    recognition.lang = 'fr-FR';
-    recognition.start();
+// Fonction pour ajouter un message
+function addMessage(text, sender) {
+  const msg = document.createElement("div");
+  msg.classList.add("message", sender);
+  msg.textContent = text;
+  chatContainer.appendChild(msg);
+  chatContainer.scrollTop = chatContainer.scrollHeight;
+}
 
-    recognition.onresult = async (event) => {
-      const userText = event.results[0][0].transcript;
+// Fonction pour envoyer le message à OpenAI
+async function sendMessage(userText) {
+  addMessage(userText, "user");
 
-      // 2. Envoyer à OpenAI
-      const apiKey = "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"; // <-- Mets ta clé API OpenAI ici
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [{ role: "user", content: userText }]
-        })
-      });
-
-      const data = await response.json();
-      const reply = data.choices[0].message.content;
-
-      // 3. Synthèse vocale
-      const utterance = new SpeechSynthesisUtterance(reply);
-      utterance.lang = "fr-FR";
-      utterance.onstart = () => animateMouth(true);
-      utterance.onend = () => animateMouth(false);
-      speechSynthesis.speak(utterance);
-    };
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: userText }]
+    })
   });
+
+  const data = await response.json();
+  const reply = data.choices[0].message.content;
+  addMessage(reply, "ia");
+}
+
+// Envoyer avec le bouton
+sendBtn.addEventListener("click", () => {
+  const text = messageInput.value.trim();
+  if(text) {
+    sendMessage(text);
+    messageInput.value = "";
+  }
+});
+
+// Envoyer avec la touche Enter
+messageInput.addEventListener("keypress", (e) => {
+  if(e.key === "Enter") {
+    sendBtn.click();
+  }
+});
 </script>
 
 </body>
 </html>
+
+     
